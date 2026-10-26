@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Luno — вхід</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;700&display=swap">
+<style>
+:root{--bg:#eceef3;--pn:#fff;--ln:#d3d6df;--tx:#1b1d25;--mu:#666b7a;--ac:#4458ff;--ak:#fff;--er:#d6224a;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111218;--pn:#1c1e26;--ln:#32353f;--tx:#e9eaef;--mu:#8f94a4;--ac:#7c8bff;--ak:#10111a;--er:#ff6b8b}}
+:root[data-theme="dark"]{--bg:#111218;--pn:#1c1e26;--ln:#32353f;--tx:#e9eaef;--mu:#8f94a4;--ac:#7c8bff;--ak:#10111a;--er:#ff6b8b}
+*{box-sizing:border-box}html,body{min-height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 Onest,system-ui,sans-serif;display:grid;place-items:center;padding:16px}
+main{width:100%;max-width:440px;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:28px 24px}
+h1{margin:0 0 4px;font-size:26px}p{margin:0 0 16px;color:var(--mu)}
+label{display:block;font-weight:700;margin-bottom:6px}
+input{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:12px}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#code{font-size:28px;letter-spacing:10px;text-align:center}
+button.p{width:100%;margin-top:12px;font:inherit;font-weight:700;background:var(--ac);color:var(--ak);border:0;border-radius:10px;padding:12px;cursor:pointer}
+button.p:disabled{opacity:.5;cursor:default}
+button.l{background:none;border:0;color:var(--mu);font:inherit;cursor:pointer;padding:10px 0 0;text-decoration:underline}
+button.l:disabled{opacity:.6;cursor:default;text-decoration:none}
+#msg{min-height:22px;margin:12px 0 0;font-size:14px;color:var(--mu)}#msg.bad{color:var(--er)}
+.card{display:block;text-decoration:none;color:inherit;border:1px solid var(--ln);border-radius:12px;padding:16px;margin-top:12px;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--ac);transform:translateY(-1px)}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--ak);background:var(--ac);border-radius:6px;padding:2px 8px;margin-bottom:6px}
+.card b{display:block;font-size:19px}.card span{color:var(--mu);font-size:14px}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<main>
+<h1>Luno</h1>
+<section id="s1"><p>Введи пошту, і ми надішлемо листом код для входу.</p>
+<form id="f1"><label for="em">Електронна пошта</label><input id="em" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="p" id="b1">Надіслати код</button></form></section>
+<section id="s2" hidden><p>Ми надіслали код на <b id="to"></b>. Лист може йти до хвилини, перевір також «Спам».</p>
+<form id="f2"><label for="code">Код із листа</label><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="\d{6}" required placeholder="000000"><button class="p" id="b2">Увійти</button></form>
+<button class="l" id="rs" type="button">Надіслати ще раз</button> <button class="l" id="ch" type="button">Інша пошта</button></section>
+<section id="s3" hidden><p>Ти увійшов як <b id="who"></b>. Куди йдемо?</p>
+<a class="card" href="https://lunomotion.netlify.app/"><span class="tag">ЕФЕКТИ</span><b>Luno Motion</b><span>Анімація, титри, ключові кадри, експорт відео</span></a>
+<a class="card" href="https://lunoeditor.netlify.app/"><span class="tag">ЗВИЧАЙНИЙ</span><b>Luno Editor</b><span>Звичайний Луно: фоторедактор із шарами, пензлями й фільтрами</span></a>
+<button class="l" id="out" type="button">Вийти</button></section>
+<div id="msg" role="status" aria-live="polite"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s),K='luno_session';let em='',cd=0;
+async function api(p,b){const r=await fetch(p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Помилка сервера');return d}
+const show=n=>['s1','s2','s3'].forEach((i,k)=>$('#'+i).hidden=k!=n-1);
+const msg=(t,bad)=>{const e=$('#msg');e.textContent=t||'';e.className=bad?'bad':''};
+function timer(){clearInterval(cd);let s=60;const b=$('#rs');b.disabled=true;const f=()=>{b.textContent=s>0?`Надіслати ще раз (${s} с)`:'Надіслати ще раз';if(s--<=0){clearInterval(cd);b.disabled=false}};f();cd=setInterval(f,1000)}
+async function send(){msg('Надсилаю…');$('#b1').disabled=true;try{await api('/api/send-code',{email:em});$('#to').textContent=em;show(2);msg('');timer();$('#code').value='';$('#code').focus()}catch(e){msg(e.message,1)}$('#b1').disabled=false}
+function enter(email){$('#who').textContent=email;show(3);msg('')}
+$('#f1').onsubmit=e=>{e.preventDefault();em=$('#em').value.trim().toLowerCase();send()};
+$('#rs').onclick=send;$('#ch').onclick=()=>{show(1);msg('');clearInterval(cd)};
+async function check(){const c=$('#code').value.trim();if(!/^\d{6}$/.test(c))return;$('#b2').disabled=true;msg('Перевіряю…');try{const d=await api('/api/verify-code',{email:em,code:c});try{localStorage.setItem(K,d.token)}catch(_){}enter(d.email)}catch(e){msg(e.message,1)}$('#b2').disabled=false}
+$('#f2').onsubmit=e=>{e.preventDefault();check()};
+$('#code').oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'');if(e.target.value.length==6)check()};
+$('#out').onclick=()=>{try{localStorage.removeItem(K)}catch(_){}show(1);msg('')};
+(async()=>{let t=null;try{t=localStorage.getItem(K)}catch(_){}if(!t)return;try{const d=await api('/api/verify-code',{token:t});enter(d.email)}catch(_){try{localStorage.removeItem(K)}catch(__){}}})();
+</script></body></html>
